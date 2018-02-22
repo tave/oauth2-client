@@ -19,6 +19,7 @@ use GuzzleHttp\ClientInterface as HttpClientInterface;
 use GuzzleHttp\Exception\BadResponseException;
 use League\OAuth2\Client\Grant\AbstractGrant;
 use League\OAuth2\Client\Grant\GrantFactory;
+use League\OAuth2\Client\Grant\RefreshToken;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\ArrayAccessorTrait;
@@ -517,11 +518,17 @@ abstract class AbstractProvider
     {
         $grant = $this->verifyGrant($grant);
 
+        $excludeRedirectUriParam = !empty($options['exclude_redirect_uri_in_refresh_grant']);
+        unset($options['exclude_redirect_uri_in_refresh_grant']);
+
         $params = [
             'client_id'     => $this->clientId,
             'client_secret' => $this->clientSecret,
-            'redirect_uri'  => $this->redirectUri,
         ];
+
+        if (!$excludeRedirectUriParam || !($grant instanceof RefreshToken)) {
+            $params['redirect_uri'] = $this->redirectUri;
+        }
 
         $params   = $grant->prepareRequestParameters($params, $options);
         $request  = $this->getAccessTokenRequest($params);
